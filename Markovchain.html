@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Генератор текста на основе цепей Маркова</title>
+
+    <style>
+        h1 {
+            margin-bottom: 5px;
+        }
+
+        .markov {
+            display: table;
+            width: 100%;
+            font-size: 18px;
+        }
+
+        .markov input, .markov select, .markov button {
+            font-size: 16px;
+        }
+
+        .column {
+            padding: 5px;
+            display: table-cell;
+            width: 50%;
+            vertical-align: top;
+        }
+
+        .column textarea {
+            width: 100%;
+            min-height: 250px;
+            resize: vertical;
+        }
+
+        .column input[type="number"] {
+            width: 55px;
+        }
+
+        #prefix-box {
+            width: calc(100% - 142px);
+        }
+
+        .row {
+            margin-bottom: 6px;
+            min-height: 24px;
+            white-space: nowrap;
+        }
+
+        @media (max-width: 767px) {
+            .column {
+                display: table-row;
+                width: 100%;
+            }
+
+            .result {
+                margin-top: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Генератор текста на основе цепей Маркова</h1>
+    <div class="markov">
+        <div class="column">
+            <div class="controls">
+                <div class="row">
+                    <label>Тип токенов:
+                        <select id="token-type-box" onchange="UpdateChain()">
+                            <option value='chars'>символы</option>
+                            <option value='words'>слова</option>
+                        </select>
+                    </label>
+                </div>
+
+                <div class="row">
+                    <label>Порядок цепи: <input type="number" min="1" id="order-box" value="5" onchange="UpdateChain()"></label>
+                </div>
+            </div>
+
+            <div class="text-input">
+                Входной текст (для обучения):
+                <textarea id="text-box" onchange="UpdateChain()">Lorem, ipsum dolor sit amet consectetur, adipisicing elit. Deleniti veritatis odio aliquid sapiente id illo numquam, veniam? Rerum fugit voluptatum non, laboriosam facilis nostrum quia illum error eligendi maiores ipsam.</textarea>
+            </div>
+
+            <div class="chain-info" id="info-box"></div>
+        </div>
+
+        <div class="column">
+            <div class="result">
+                <div class="row">
+                    <label>Длина текста: <input type="number" min="1" id="text-length-box" value="400"></label>
+                </div>
+
+                <div class="row">
+                    <label>Начальный текст: <input type="text" id="prefix-box" value="Lorem"></label>
+                </div>
+
+                <div>
+                    Сгенерированный текст:
+                    <textarea id="result-box"></textarea>
+                </div>
+
+                <button onclick="Generate()">Сгенерировать</button><br>
+            </div>
+        </div>
+    </div>
+
+    <script src="MarkovChain.js"></script>
+    <script>
+        let chain = null
+
+        function UpdateChain() {
+            let text = document.getElementById('text-box').value
+            let type = document.getElementById('token-type-box').value
+            let order = +document.getElementById('order-box').value
+            let infoBox = document.getElementById('info-box')
+            let regexp
+
+            if (type == 'words') {
+                regexp = new RegExp(/#?[а-яА-ЯёЁa-zA-Z0-9_]+(?:[-/][а-яА-ЯёЁa-zA-Z0-9_]+)*|,|\.|\!|\?|\:|\n| /g)
+            }
+            else {
+                regexp = new RegExp(/[а-яА-ЯёЁa-zA-Z0-9_]|,|\.|\!|\?|\:|\n| |\/|\-/g)
+            }
+
+            chain = new MarkovChain(text, order, regexp)
+
+            infoBox.innerHTML = 'Параметры созданной цепи Маркова:<br>'
+            infoBox.innerHTML += `<b>Порядок</b>: ${order}<br>`
+            infoBox.innerHTML += `<b>Тип токенов</b>: ${type == 'words' ? 'слова' : 'символы'}<br>`
+            infoBox.innerHTML += `<b>Количество состояний</b>: ${Object.keys(chain.table).length}<br>`
+            console.log(`chain updated with type=${type}, order: ${order}`)
+        }
+
+        function Generate() {
+            if (chain == null) {
+                UpdateChain()
+            }
+
+            let length = +document.getElementById('text-length-box').value
+            let prefix = document.getElementById('prefix-box').value
+            let resultBox = document.getElementById('result-box')
+            resultBox.value = chain.Generate(prefix, length)
+        }
+
+        UpdateChain()
+    </script>
+</body>
+</html>
